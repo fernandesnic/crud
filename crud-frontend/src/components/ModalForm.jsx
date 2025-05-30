@@ -1,6 +1,5 @@
-import { useEffect } from "react";
-import { useState } from "react";
-//onSubmit
+import { useEffect, useState } from "react";
+
 export default function ModalForm({
   isOpen,
   onClose,
@@ -8,124 +7,158 @@ export default function ModalForm({
   onSubmit,
   clientData,
 }) {
-  const [rate, setRate] = useState("");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [job, setJob] = useState("");
-  const [status, setStatus] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    job: "",
+    rate: "",
+    isactive: false,
+  });
+
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? e.target.checked : value,
+    }));
+  };
 
   const handleStatusChange = (e) => {
-    setStatus(e.target.value === "Active");
+    setFormData((prev) => ({
+      ...prev,
+      isactive: e.target.value === "Active",
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const clientData = {
-        name,
-        email,
-        job,
-        rate: Number(rate),
-        isactive: status,
-      };
-      await onSubmit(clientData);
+      await onSubmit({
+        ...formData,
+        rate: Number(formData.rate),
+      });
       onClose();
     } catch (err) {
-      console.error("Error adding client", err);
+      console.error(
+        `Error ${mode === "edit" ? "updating" : "adding"} client`,
+        err
+      );
     }
-    onClose();
   };
 
   useEffect(() => {
     if (mode === "edit" && clientData) {
-      setName(clientData.name);
-      setEmail(clientData.email);
-      setJob(clientData.job);
-      setRate(clientData.rate);
-      setStatus(clientData.isActive);
+      setFormData({
+        name: clientData.name,
+        email: clientData.email,
+        job: clientData.job,
+        rate: clientData.rate,
+        isactive: clientData.isactive,
+      });
     } else {
-      // Reset fields when adding a new client
-      setName("");
-      setEmail("");
-      setJob("");
-      setRate("");
-      setStatus(false);
+      setFormData({
+        name: "",
+        email: "",
+        job: "",
+        rate: "",
+        isactive: false,
+      });
     }
   }, [mode, clientData]);
 
+  if (!isOpen) return null;
+
   return (
-    <>
-      {/* You can open the modal using document.getElementById('ID').showModal() method */}
-
-      <dialog id="my_modal_3" className="modal" open={isOpen}>
-        <div className="modal-box">
-          <h3 className="font-bold text-lg py-4">
-            {mode === "edit" ? "Edit Client" : "Client Details"}{" "}
-          </h3>
-          <form method="dialog" onSubmit={handleSubmit}>
-            {/* if there is a button in form, it will close the modal */}
-
-            <label className="input input-borderes w-full my-4 flex items-center gap-2">
-              Name
+    <dialog className="modal" open={isOpen}>
+      <div className="modal-box">
+        <h3 className="font-bold text-lg py-4">
+          {mode === "edit" ? "Edit Client" : "Add New Client"}
+        </h3>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <label className="form-control w-full">
+              <div className="label">
+                <span className="label-text">Name</span>
+              </div>
               <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
                 type="text"
-                className="grow"
-              />
-            </label>
-            <label className="input input-borderes w-full my-4 flex items-center gap-2">
-              Email
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                type="text"
-                className="grow"
-              />
-            </label>
-            <label className="input input-borderes w-full my-4 flex items-center gap-2">
-              Job
-              <input
-                value={job}
-                onChange={(e) => setJob(e.target.value)}
-                type="text"
-                className="grow"
+                className="input input-bordered w-full"
+                required
               />
             </label>
 
-            <div className="flex mb-4 justify-between">
-              <label className="input input-borderes mr-4 my-4  items-center gap-2">
-                Rate
+            <label className="form-control w-full">
+              <div className="label">
+                <span className="label-text">Email</span>
+              </div>
+              <input
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                type="email"
+                className="input input-bordered w-full"
+                required
+              />
+            </label>
+
+            <label className="form-control w-full">
+              <div className="label">
+                <span className="label-text">Job</span>
+              </div>
+              <input
+                name="job"
+                value={formData.job}
+                onChange={handleChange}
+                type="text"
+                className="input input-bordered w-full"
+              />
+            </label>
+
+            <div className="flex gap-4">
+              <label className="form-control flex-1">
+                <div className="label">
+                  <span className="label-text">Rate</span>
+                </div>
                 <input
-                  value={rate}
-                  onChange={(e) => setRate(e.target.value)}
+                  name="rate"
+                  value={formData.rate}
+                  onChange={handleChange}
                   type="number"
-                  className="grow"
+                  className="input input-bordered w-full"
+                  min="0"
+                  step="0.01"
                 />
               </label>
-              <select
-                value={status ? "Active" : "Inactive"}
-                className="select select-borderes  mt-4 max-w-xs"
-                onChange={handleStatusChange}
-              >
-                <option>Inactive</option>
-                <option>Active</option>
-              </select>
-            </div>
 
-            <button
-              className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-              onClick={onClose}
-            >
-              ✕
+              <label className="form-control flex-1">
+                <div className="label">
+                  <span className="label-text">Status</span>
+                </div>
+                <select
+                  value={formData.isactive ? "Active" : "Inactive"}
+                  onChange={handleStatusChange}
+                  className="select select-bordered w-full"
+                >
+                  <option value="Inactive">Inactive</option>
+                  <option value="Active">Active</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div className="modal-action">
+            <button type="button" className="btn btn-ghost" onClick={onClose}>
+              Cancel
             </button>
-            <button className="btn btn-sucess">
-              {" "}
-              {mode === "edit" ? "Save Changes" : "Add Client"}{" "}
+            <button type="submit" className="btn btn-primary">
+              {mode === "edit" ? "Save Changes" : "Add Client"}
             </button>
-          </form>
-        </div>
-      </dialog>
-    </>
+          </div>
+        </form>
+      </div>
+    </dialog>
   );
 }

@@ -1,101 +1,73 @@
-import axios from "axios";
 import { useState } from "react";
 
 export default function TableList({
   handleOpen,
   tableData,
-  setTableData,
+  handleDelete,
   searchTerm,
 }) {
   const [error] = useState(null);
 
-  const filteredData = tableData.filter(
-    (client) =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.job.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = tableData.filter((client) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      client.name.toLowerCase().includes(term) ||
+      client.email.toLowerCase().includes(term) ||
+      client.job?.toLowerCase().includes(term)
+    );
+  });
 
-  const handleDelete = async (id) => {
-    try {
-      if (!window.confirm("Tem certeza que deseja excluir este cliente?")) {
-        return;
-      }
-      const response = await axios.delete(
-        `http://localhost:3000/api/clients/${id}`
-      );
-      if (response.status === 200) {
-        setTableData((prevData) =>
-          prevData.filter((client) => client.id !== id)
-        );
-        alert("Cliente excluído com sucesso!");
-      }
-    } catch (error) {
-      console.error("Erro ao excluir cliente:", error);
-      alert(
-        `Erro ao excluir cliente: ${
-          error.response?.data?.message || error.message
-        }`
-      );
-    }
-  };
   return (
-    <>
-      {error && <div className="alert alert-error">{error}</div>}
-      <div className="overflow-x-auto mt-10">
-        <table className="table">
-          {/* head */}
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Job</th>
-              <th>Rate</th>
-              <th>Status</th>
+    <div className="overflow-x-auto mt-10">
+      {error && <div className="alert alert-error mb-4">{error}</div>}
+
+      <table className="table w-full">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Job</th>
+            <th>Rate</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredData.map((client) => (
+            <tr key={client.id} className="hover">
+              <td>{client.id}</td>
+              <td>{client.name}</td>
+              <td>{client.email}</td>
+              <td>{client.job}</td>
+              <td>{client.rate}</td>
+              <td>
+                <span
+                  className={`badge ${
+                    client.isactive ? "badge-primary" : "badge-outline"
+                  }`}
+                >
+                  {client.isactive ? "Active" : "Inactive"}
+                </span>
+              </td>
+              <td className="flex gap-2">
+                <button
+                  onClick={() => handleOpen("edit", client)}
+                  className="btn btn-sm btn-secondary"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(client.id)}
+                  className="btn btn-sm btn-error"
+                >
+                  Delete
+                </button>
+              </td>
             </tr>
-          </thead>
-          <tbody className="hover">
-            {/* row 1 */}
-            {filteredData.map((client) => (
-              <tr key={client.id}>
-                <th>{client.id}</th>
-                <th>{client.name}</th>
-                <td>{client.email}</td>
-                <td>{client.job}</td>
-                <td>{client.rate}</td>
-                <td>
-                  <button
-                    className={`btn rounded-full w-20 ${
-                      client.isactive
-                        ? `btn-primary`
-                        : `btn-outline btn-primary`
-                    }`}
-                  >
-                    {client.isactive ? "Active" : "Inactive"}
-                  </button>
-                </td>
-                <td>
-                  <button
-                    onClick={() => handleOpen("edit", client)}
-                    className="btn btn-secondary"
-                  >
-                    Update
-                  </button>
-                </td>
-                <td>
-                  <button
-                    className="btn btn-error"
-                    onClick={() => handleDelete(client.id)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

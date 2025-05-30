@@ -7,7 +7,7 @@ import axios from "axios";
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
-  const [modalMode, setModalModel] = useState("add");
+  const [modalMode, setModalMode] = useState("add");
   const [searchTerm, setSearchTerm] = useState("");
   const [clientData, setClientData] = useState(null);
   const [tableData, setTableData] = useState([]);
@@ -17,8 +17,10 @@ function App() {
     try {
       const response = await axios.get("http://localhost:3000/api/clients");
       setTableData(response.data);
+      setError(null);
     } catch (err) {
       setError(err.message);
+      console.error("Error fetching clients:", err);
     }
   };
 
@@ -26,52 +28,66 @@ function App() {
     fetchClients();
   }, []);
 
-  const handleOpen = (mode, client) => {
+  const handleOpen = (mode, client = null) => {
+    setModalMode(mode);
     setClientData(client);
     setIsOpen(true);
-    setModalModel(mode);
   };
 
-  const handleSubmit = async (newClientData) => {
-    if (modalMode === "add") {
-      try {
+  const handleSubmit = async (formData) => {
+    try {
+      if (modalMode === "add") {
         const response = await axios.post(
           "http://localhost:3000/api/clients",
-          newClientData
+          formData
         );
-        console.log("Client added:", response.data);
-        setTableData((prevData) => [...prevData, response.data]);
-      } catch (error) {
-        console.error("Eroor adding client:", error);
-      }
-    } else {
-      console.log("Updating client with ID:", clientData.id);
-      try {
+        setTableData((prev) => [...prev, response.data]);
+      } else {
         const response = await axios.put(
           `http://localhost:3000/api/clients/${clientData.id}`,
-          newClientData
+          formData
         );
-        console.log("Client updated:", response.data);
-        setTableData((prevData) =>
-          prevData.map((client) =>
+        setTableData((prev) =>
+          prev.map((client) =>
             client.id === clientData.id ? response.data : client
           )
         );
-      } catch (error) {
-        console.error("Error updating client:", error);
       }
+      setIsOpen(false);
+    } catch (error) {
+      console.error(
+        `Error ${modalMode === "add" ? "adding" : "updating"} client:`,
+        error
+      );
+      setError(error.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Tem certeza que deseja excluir este cliente?")) return;
+
+    try {
+      await axios.delete(`http://localhost:3000/api/clients/${id}`);
+      setTableData((prev) => prev.filter((client) => client.id !== id));
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      setError(error.message);
     }
   };
 
   return (
     <>
       <NavBar onOpen={() => handleOpen("add")} onSearch={setSearchTerm} />
+
+      {error && <div className="error-message">Erro: {error}</div>}
+
       <TableList
-        setTableData={setTableData}
         tableData={tableData}
         handleOpen={handleOpen}
+        handleDelete={handleDelete}
         searchTerm={searchTerm}
       />
+
       <ModalForm
         isOpen={isOpen}
         onSubmit={handleSubmit}
