@@ -1,33 +1,47 @@
-export default function TableList({ handleOpen }) {
-  const clients = [
-    {
-      id: 1,
-      name: "Jonh Doe",
-      email: "Jong.Doe@gmail.com",
-      job: "Cooker",
-      rate: "100",
-      isactive: true,
-    },
-    {
-      id: 2,
-      name: "Jonh1 Doe",
-      email: "Jong1.Doe@gmail.com",
-      job: "Cooker1",
-      rate: "101",
-      isactive: true,
-    },
-    {
-      id: 3,
-      name: "Jonh2 Doe",
-      email: "Jong2.Doe@gmail.com",
-      job: "Cooker2",
-      rate: "102",
-      isactive: false,
-    },
-  ];
+import axios from "axios";
+import { useState } from "react";
 
+export default function TableList({
+  handleOpen,
+  tableData,
+  setTableData,
+  searchTerm,
+}) {
+  const [error] = useState(null);
+
+  const filteredData = tableData.filter(
+    (client) =>
+      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.job.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleDelete = async (id) => {
+    try {
+      if (!window.confirm("Tem certeza que deseja excluir este cliente?")) {
+        return;
+      }
+      const response = await axios.delete(
+        `http://localhost:3000/api/clients/${id}`
+      );
+      if (response.status === 200) {
+        setTableData((prevData) =>
+          prevData.filter((client) => client.id !== id)
+        );
+        alert("Cliente excluído com sucesso!");
+      }
+    } catch (error) {
+      console.error("Erro ao excluir cliente:", error);
+      alert(
+        `Erro ao excluir cliente: ${
+          error.response?.data?.message || error.message
+        }`
+      );
+    }
+  };
   return (
     <>
+      {error && <div className="alert alert-error">{error}</div>}
       <div className="overflow-x-auto mt-10">
         <table className="table">
           {/* head */}
@@ -43,8 +57,8 @@ export default function TableList({ handleOpen }) {
           </thead>
           <tbody className="hover">
             {/* row 1 */}
-            {clients.map((client) => (
-              <tr>
+            {filteredData.map((client) => (
+              <tr key={client.id}>
                 <th>{client.id}</th>
                 <th>{client.name}</th>
                 <td>{client.email}</td>
@@ -63,14 +77,19 @@ export default function TableList({ handleOpen }) {
                 </td>
                 <td>
                   <button
-                    onClick={() => handleOpen("edit")}
+                    onClick={() => handleOpen("edit", client)}
                     className="btn btn-secondary"
                   >
                     Update
                   </button>
                 </td>
                 <td>
-                  <button className="btn btn-error">Delete</button>
+                  <button
+                    className="btn btn-error"
+                    onClick={() => handleDelete(client.id)}
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
